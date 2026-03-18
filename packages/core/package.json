@@ -1,6 +1,6 @@
 {
   "name": "@anagnole/claude-cli-wrapper",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Shared library for spawning, parsing, and managing Claude Code CLI sessions",
   "type": "module",
   "main": "dist/index.js",
@@ -43,6 +43,15 @@
     "agent"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anagnole/claude-cli.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/anagnole/claude-cli#readme",
+  "bugs": {
+    "url": "https://github.com/anagnole/claude-cli/issues"
+  },
   "engines": {
     "node": ">=18"
   }
