@@ -79,27 +79,55 @@ const child = spawnClaude({
 
 ## Session management
 
+`SessionMap` tracks CLI sessions by hashing message history. On resume, it returns the session ID **and** the original spawn options — so system prompts, MCP configs, permissions, etc. are automatically restored.
+
 ```typescript
-import { SessionMap, type MessageParam } from "@anagnole/claude-cli-wrapper";
+import { spawnClaude, SessionMap, type MessageParam } from "@anagnole/claude-cli-wrapper";
 
 const sessions = new SessionMap();
 
-// Hash message history to find a resumable CLI session
+// First request — no session to resume
 const messages: MessageParam[] = [
+  { role: "user", content: "Hello" },
+];
+
+const spawnOpts = {
+  model: "claude-sonnet-4-6",
+  systemPrompt: "You are a helpful assistant.",
+  mcpConfig: "/path/to/mcp.json",
+  permissionMode: "bypassPermissions",
+};
+
+const child = spawnClaude({ ...spawnOpts, prompt: "Hello", streaming: false });
+// ... collect response, get cliSessionId ...
+
+// Store session with its options
+sessions.store(
+  [...messages, { role: "assistant", content: "Hi!" }],
+  "cli-session-uuid",
+  "claude-sonnet-4-6",
+  spawnOpts,  // stored for replay on resume
+);
+
+// Second request — session + options restored automatically
+const nextMessages: MessageParam[] = [
   { role: "user", content: "Hello" },
   { role: "assistant", content: "Hi!" },
   { role: "user", content: "What did I say?" },
 ];
 
-const hash = SessionMap.hashContext(messages);
-const sessionId = sessions.lookup(hash, "claude-sonnet-4-6");
+const hash = SessionMap.hashContext(nextMessages);
+const saved = sessions.lookup(hash, "claude-sonnet-4-6");
 
-// After a response, store for future --resume
-sessions.store(
-  [...messages, { role: "assistant", content: "You said Hello" }],
-  "cli-session-uuid",
-  "claude-sonnet-4-6",
-);
+if (saved) {
+  // saved.options contains: systemPrompt, mcpConfig, permissionMode, etc.
+  const child = spawnClaude({
+    ...saved.options,
+    resumeSessionId: saved.sessionId,
+    prompt: "What did I say?",
+    streaming: false,
+  });
+}
 ```
 
 ## Transform helpers
@@ -134,7 +162,7 @@ import type { MessagesRequest } from "@anagnole/claude-cli-wrapper/types";
 spawnClaude, SpawnOptions, NdjsonParser
 
 // Session
-SessionMap
+SessionMap, SessionLookup
 
 // Transform
 extractPrompt, extractSystem, warnUnsupported

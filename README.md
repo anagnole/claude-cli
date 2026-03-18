@@ -107,17 +107,22 @@ const child = spawnClaude({
 
 #### Session management
 
+`SessionMap` tracks sessions and automatically restores spawn options (system prompt, MCP config, permissions, etc.) on resume.
+
 ```typescript
-import { SessionMap } from "@anagnole/claude-cli-wrapper";
+import { SessionMap, spawnClaude } from "@anagnole/claude-cli-wrapper";
 
 const sessions = new SessionMap();
 
-// Hash message history to find a resumable session
-const hash = SessionMap.hashContext(messages);
-const sessionId = sessions.lookup(hash, "claude-sonnet-4-6");
+// Store session with its config after a response
+sessions.store(allMessages, cliSessionId, "claude-sonnet-4-6", spawnOpts);
 
-// After a response, store for future --resume
-sessions.store(allMessages, cliSessionId, "claude-sonnet-4-6");
+// On next request — session ID + original config restored
+const hash = SessionMap.hashContext(messages);
+const saved = sessions.lookup(hash, "claude-sonnet-4-6");
+if (saved) {
+  spawnClaude({ ...saved.options, resumeSessionId: saved.sessionId, prompt, streaming: true });
+}
 ```
 
 #### Transform helpers
